@@ -10,3 +10,6 @@ spacy
 scikit-learn
 google-generativeai
 pytest
+
+
+# After installing, run: python -m spacy download en_core_web_sm
