@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+python-dotenv
+flask-cors
+pdfminer.six
+docx2txt
+spacy
+scikit-learn
+google-generativeai
+pytest

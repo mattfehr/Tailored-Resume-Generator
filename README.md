@@ -3,18 +3,18 @@
 **AI-powered resume tailoring platform** that helps job seekers automatically rewrite their resumes to match a target job posting using Natural Language Processing (NLP) and Large Language Models (LLMs).  
 
 This is the **MVP prototype** for the CECS 451 term project. It implements:
-- Resume & job description upload
-- Keyword extraction (TF-IDF + NER)
-- AI-powered resume rewriting (Gemini API)
-- ATS match scoring (cosine similarity)
-- A React frontend for uploading and reviewing tailored resumes
+- Resume & job description upload  
+- Keyword extraction (TF-IDF + NER)  
+- AI-powered resume rewriting (Gemini API)  
+- ATS match scoring (cosine similarity)  
+- A React frontend for uploading and reviewing tailored resumes  
 
 ---
 
 ## Tech Stack
 
 **Frontend:** React (Vite or Next.js)  
-**Backend:** Flask (Python 3.10+)  
+**Backend:** **FastAPI** (Python 3.10+)  
 **AI:** Google Gemini API (LLM for rewriting)  
 **NLP:** spaCy, scikit-learn (TF-IDF, cosine similarity)  
 **Data Extraction:** pdfminer.six, docx2txt  
@@ -27,7 +27,7 @@ This is the **MVP prototype** for the CECS 451 term project. It implements:
 backend/
 │
 ├── app/
-│   ├── main.py                # Flask entry point
+│   ├── main.py                # FastAPI entry point
 │   ├── config.py              # Environment configuration (API keys, constants)
 │   ├── routes/
 │   │   ├── resume_routes.py   # Resume upload + rewrite + scoring endpoints
@@ -86,35 +86,43 @@ README.md
 
 ## Setup Instructions
 
-### Backend Setup
+### **Backend Setup**
 
 ```bash
 cd backend
+
+# Create and activate a virtual environment
 python3 -m venv venv
-source venv/bin/activate     # On Windows: venv\Scripts\activate
+source venv/bin/activate        # On Windows (PowerShell): venv\Scripts\Activate.ps1
+
+# Install dependencies into the venv
 pip install -r app/requirements.txt
 ```
 
 Create a `.env` file in `backend/`:
 ```
 GEMINI_API_KEY=your_api_key_here
-FLASK_ENV=development
+ENV=development
 ```
 
-Then run the Flask backend:
+Run the FastAPI backend:
 ```bash
-export FLASK_APP=app/main.py
-flask run
+uvicorn app.main:app --reload
 ```
 
 Your backend will run at:
 ```
-http://127.0.0.1:5000
+http://127.0.0.1:8000
+```
+
+Swagger API docs:
+```
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-### Frontend Setup
+### **Frontend Setup**
 
 ```bash
 cd frontend
@@ -127,7 +135,7 @@ Frontend will typically run on:
 http://localhost:5173
 ```
 
-Make sure your Flask app has CORS enabled so the frontend can call the API.
+CORS is already enabled for this origin in the backend configuration.
 
 ---
 
@@ -147,7 +155,7 @@ You can add more tests in `backend/tests/` to validate each service independentl
 | Variable | Description |
 |-----------|-------------|
 | `GEMINI_API_KEY` | Your Google Gemini API key |
-| `FLASK_ENV` | Flask environment mode (development / production) |
+| `ENV` | Application environment (development / production) |
 
 ---
 
@@ -157,7 +165,7 @@ You can add more tests in `backend/tests/` to validate each service independentl
 2. **Backend extracts** text and keywords using TF-IDF + NER.  
 3. **Gemini API** rewrites the resume to emphasize matching skills.  
 4. **ATS score** is computed using cosine similarity.  
-5. **Frontend displays** tailored resume and score, with download/export options.
+5. **Frontend displays** tailored resume and score, with download/export options.  
 
 ---
 
@@ -186,6 +194,3 @@ You can add more tests in `backend/tests/` to validate each service independentl
 
 - **Team ResuMatch AI** – CECS 451, Fall 2025  
 - Original concept & architecture by: *Matthew Fehr & collaborators*
-
----
-
