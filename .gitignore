@@ -1,0 +1,96 @@
+# ==========================================
+# Python / Flask Backend
+# ==========================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env
+*.env
+
+# Local settings and API keys
+backend/app/config_local.py
+backend/app/secrets.json
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# PyInstaller
+*.spec
+
+# Flask instance folder
+instance/
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+backend/debug.log
+
+# Jupyter notebooks (if used for testing)
+*.ipynb_checkpoints
+
+# ==========================================
+# React / Frontend
+# ==========================================
+
+# Node modules
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+frontend/.next/
+frontend/dist/
+frontend/build/
+
+# Dependency directories
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor config / cache
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# ==========================================
+# Testing / Coverage
+# ==========================================
+.coverage
+htmlcov/
+.pytest_cache/
+__snapshots__/
+
+# ==========================================
+# Data and Generated Files
+# ==========================================
+
+# Example data or temp results
+data/sample_resumes/*.pdf
+data/sample_jobs/*.txt
+data/mock_outputs/*
+!data/sample_resumes/.keep
+!data/sample_jobs/.keep
+!data/mock_outputs/.keep
+
+# Exported resumes or reports
+exports/
+*.pdf
+*.docx
+
+# ==========================================
+# Misc / System
+# ==========================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
