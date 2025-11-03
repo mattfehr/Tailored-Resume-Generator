@@ -9,10 +9,10 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# --- CORS: allow React dev server to connect ---
+# --- CORS: allow Next dev server to connect ---
 origins = [
-    "http://localhost:5173",  # Vite/React
-    "http://127.0.0.1:5173"
+    "http://localhost:3000",  # Next.js dev server
+    "http://127.0.0.1:3000"
 ]
 app.add_middleware(
     CORSMiddleware,
