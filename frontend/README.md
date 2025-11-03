@@ -34,3 +34,37 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+# Need to
+- translate taiolored resume from latex into something readable
+- improve ATS score
+- get better keywords
+
+## pages
+Page	Route	Purpose
+Main Page	/	Core workflow: upload resume + job description, generate tailored resume, display results
+Login Page	/login	Handles user authentication (via Supabase, Firebase, or Auth.js)
+Saved Resumes Page	/saved	Displays user’s saved tailored resumes (list view with edit/delete options)
+Resume Editor Page (optional later)	/edit/[id]	Allows editing of a saved resume in detail view with preview & re-tailoring
+
+## components
+UploadForm.tsx	Main Page	Upload resume file and/or paste job description
+ATSScoreDisplay.tsx	Main Page	Displays ATS score visually (bar or donut chart)
+TailoredResumeEditor.tsx	Main Page / Edit Page	Shows rewritten resume (editable text area or formatted view)
+KeywordList.tsx	Main Page	Displays extracted keywords as colored tags
+Navbar.tsx	All Pages	Navigation links (Home, Saved, Login, etc.)
+Footer.tsx	All Pages	Small footer with credits / version info
+PDFExportButton.tsx	Main & Edit Pages	Allows downloading resume as formatted PDF
+LoadingSpinner.tsx	All Pages	Reusable spinner for async tasks
+Toast.tsx (optional)	All Pages	Small notification system for errors/success messages
+AuthForm.tsx	Login Page	Handles login/register inputs and calls auth service
+SavedResumeCard.tsx	Saved Page	Displays each saved resume preview (title, date, ATS score, etc.)
+ResumePreview.tsx	Edit Page	Renders formatted LaTeX → HTML preview (read-only view)
+
+## lib utilities
+api.ts	Axios client (already done)
+auth.ts	Handles login/register/logout with Supabase or Firebase
+pdf.ts	Utility for generating/exporting PDF from HTML
+latexParser.ts	Converts LaTeX string → readable HTML/Markdown
+storage.ts	Handles saving/loading resumes (localStorage or Supabase)
+constants.ts	Holds app-wide constants like API base URL, color theme, etc.
