@@ -18,7 +18,7 @@ async def rewrite_resume(
         # Determine input type
         if resume:
             resume_text = parsing_service.extract_text_from_resume(resume)
-            latex_resume = latex_service.wrap_in_latex_structure(resume_text)
+            latex_resume = latex_service.wrap_in_jake_template(resume_text)
         elif latex_content:
             latex_resume = latex_service.clean_and_validate_latex(latex_content)
         else:
