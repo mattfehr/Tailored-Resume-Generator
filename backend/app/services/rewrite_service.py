@@ -12,7 +12,7 @@ def rewrite_resume_with_gemini(latex_resume, job_description, keywords):
 You are an expert technical resume editor who edits LaTeX resumes for software and AI roles.
 
 Your task:
-- Rewrite the resume content to align closely with the provided job description.
+- Rewrite the LaTeX resume content to align closely with the provided job description.
 - Maintain the original LaTeX structure, formatting, and layout.
 - Keep the resume one page long.
 - Modify **only** the text content between \\begin{{document}} and \\end{{document}}.
@@ -21,14 +21,17 @@ Your task:
 - Emphasize technical skills, tools, and measurable achievements most relevant to the job.
 - Strengthen phrasing using concise, action-driven, and professional language.
 - Where possible, quantify impact or results (e.g., “reduced load time by 30%” instead of “improved performance”).
-- Do NOT invent new experiences, companies, or technologies — only reword and emphasize what’s already present.
+- Do NOT invent new experiences, companies, or technologies — only reword and emphasize existing content.
 - Do NOT add extra sections, metadata, or comments.
-- Return **only the final valid LaTeX document**, with no explanations or markdown formatting.
+- IMPORTANT: Return **only the raw LaTeX source code**.
+- Do NOT wrap it in markdown formatting.
+- Do NOT include triple backticks, language tags (like ```latex), or any other fencing.
+- Your entire response must begin with a LaTeX comment or \\documentclass and end with \\end{{document}}.
 
 Job Description:
 \"\"\"{job_description}\"\"\"
 
-LaTeX Resume:
+Original LaTeX Resume:
 \"\"\"{latex_resume}\"\"\"
 """
 
