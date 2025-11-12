@@ -1,10 +1,9 @@
 from fastapi import APIRouter, UploadFile, Form, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from app.services import parsing_service, latex_service, keyword_service, rewrite_service, score_service
-import subprocess
-import tempfile
-import shutil
-from pathlib import Path
+from io import BytesIO
+import requests
+import re
 
 router = APIRouter()
 
@@ -33,7 +32,9 @@ async def rewrite_resume(
         keywords = keyword_service.extract_keywords(job_description)
 
         # Rewrite using Gemini
-        tailored_resume = rewrite_service.rewrite_resume_with_gemini(latex_resume, job_description, keywords)
+        tailored_resume = rewrite_service.rewrite_resume_with_gemini(
+            latex_resume, job_description, keywords
+        )
 
         # Compute ATS score
         ats_score = score_service.compute_ats_score(job_description, tailored_resume)
@@ -41,73 +42,54 @@ async def rewrite_resume(
         return {
             "tailored_resume": tailored_resume,
             "ats_score": ats_score,
-            "keywords": keywords
+            "keywords": keywords,
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
 
+
 @router.post("/compile", tags=["Resume"])
 async def compile_latex(latex_content: str = Form(...)):
     """
-    Compiles LaTeX into a PDF and returns it as a downloadable file.
-    Accepts raw LaTeX via form field 'latex_content'.
+    Compiles LaTeX into a PDF using latexonline.cc (no local TeX installation required).
     Automatically cleans Markdown fences and unsupported includes.
     """
     try:
-        import re
-        # 🧹 Sanitize LaTeX content
+        # Sanitize LaTeX content
         latex_content = latex_content.strip()
-
-        # Remove Markdown-style code fences like ```latex ... ```
         latex_content = re.sub(r"^```[a-zA-Z]*|```$", "", latex_content, flags=re.MULTILINE).strip()
+        latex_content = latex_content.replace(
+            "\\input{glyphtounicode}",
+            "% Removed glyphtounicode for remote compilation"
+        )
 
-        # Remove Overleaf-only includes that break local compilation
-        latex_content = latex_content.replace("\\input{glyphtounicode}", "% Removed glyphtounicode for local compilation")
+        # Send to latexonline.cc for PDF compilation
+        print("Sending to latexonline.cc for compilation...")
+        response = requests.get(
+            "https://latexonline.cc/compile",
+            params={"text": latex_content},
+            timeout=90
+        )
+        print("LATEXONLINE STATUS:", response.status_code)
+        print("LATEXONLINE HEADERS:", response.headers)
+        print("LATEXONLINE BODY (first 300):", response.text[:300])
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir_path = Path(tmpdir)
-            tex_path = tmpdir_path / "resume.tex"
-            pdf_path = tmpdir_path / "resume.pdf"
-            log_path = tmpdir_path / "compile.log"
-
-            tex_path.write_text(latex_content, encoding="utf-8")
-
-            # Prefer latexmk (more robust), else fallback to pdflatex
-            if shutil.which("latexmk"):
-                cmd = ["latexmk", "-pdf", "-interaction=nonstopmode", tex_path.name]
-            else:
-                cmd = ["pdflatex", "-interaction=nonstopmode", tex_path.name]
-
-            # Increase timeout slightly to handle first-time MiKTeX installs
-            proc = subprocess.run(
-                cmd,
-                cwd=tmpdir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                timeout=120
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=500,
+                detail=f"LaTeX API returned {response.status_code}: {response.text[:500]}"
             )
 
-            log_output = proc.stdout.decode("utf-8", errors="ignore")
-            log_path.write_text(log_output)
+        # Return PDF stream to frontend
+        pdf_stream = BytesIO(response.content)
+        return StreamingResponse(
+            pdf_stream,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=tailored_resume.pdf"}
+        )
 
-            if not pdf_path.exists():
-                # Print last few lines of log for debugging
-                tail = "\n".join(log_output.splitlines()[-40:])
-                print("===== LATEX ERROR LOG =====")
-                print(tail)
-                print("===========================")
-                raise HTTPException(status_code=422, detail=f"PDF compilation failed.\n{tail}")
-
-            return FileResponse(
-                pdf_path,
-                media_type="application/pdf",
-                filename="tailored_resume.pdf"
-            )
-
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=504, detail="LaTeX compilation timed out (possibly installing packages).")
-    except HTTPException:
-        raise
+    except requests.Timeout:
+        raise HTTPException(status_code=504, detail="Remote LaTeX API timed out.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error compiling LaTeX: {e}")
+        raise HTTPException(status_code=500, detail=f"Error using LaTeX API: {str(e)}")
