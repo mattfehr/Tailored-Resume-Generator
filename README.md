@@ -96,7 +96,7 @@ python3 -m venv venv
 source venv/bin/activate        # On Windows (PowerShell): venv\Scripts\Activate.ps1
 
 # Install dependencies into the venv
-pip install -r app/requirements.txt
+pip install -r app/requirements.txt # After installing, run: python -m spacy download en_core_web_sm
 ```
 
 Create a `.env` file in `backend/`:
