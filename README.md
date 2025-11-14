@@ -27,45 +27,66 @@ This is the **MVP prototype** for the CECS 451 term project. It implements:
 backend/
 │
 ├── app/
-│   ├── main.py                # FastAPI entry point
-│   ├── config.py              # Environment configuration (API keys, constants)
-│   ├── routes/
-│   │   ├── resume_routes.py   # Resume upload + rewrite + scoring endpoints
-│   │   └── health.py          # Simple health-check route
-│   ├── services/
-│   │   ├── parsing_service.py # PDF/DOCX → text extraction
-│   │   ├── keyword_service.py # TF-IDF + NER keyword extraction
-│   │   ├── rewrite_service.py # Gemini API rewriting logic
-│   │   └── score_service.py   # ATS score (cosine similarity)
-│   ├── utils/
-│   │   └── file_utils.py      # File-handling helpers
-│   └── requirements.txt       # Python dependencies
+│   ├── main.py                    # FastAPI entry point
+│   ├── __init__.py                # Marks app as a package
+│   │
+│   ├── routes/                    # API endpoints
+│   │   ├── __init__.py
+│   │   ├── health.py              # Health-check endpoint
+│   │   └── resume_routes.py       # Resume upload, rewrite, and scoring routes
+│   │
+│   ├── services/                  # Core backend logic
+│   │   ├── __init__.py
+│   │   ├── parsing_service.py     # PDF/DOCX → text extraction
+│   │   ├── keyword_service.py     # TF-IDF + NER keyword extraction
+│   │   ├── latex_service.py       # LaTeX resume wrapper and formatting
+│   │   ├── rewrite_service.py     # Gemini API rewriting logic
+│   │   └── score_service.py       # ATS score computation (cosine similarity)
+│   │
+│   ├── utils/                     # Helper functions and configuration
+│   │   ├── __init__.py
+│   │   └── config.py              # Environment variables and constants
+│   │
+│   └── requirements.txt           # Python dependencies
 │
-├── tests/                     # Unit tests for each service
-│   ├── test_parsing.py
-│   ├── test_keyword_extraction.py
-│   ├── test_rewrite.py
-│   └── test_score.py
+├── tests/                         # Unit tests for backend services and routes
 │
-└── README.md
+├── .env                           # Environment configuration (API keys, etc.)
+│
+└── README.md                      # Backend documentation
 
 frontend/
 │
-├── src/
-│   ├── components/
-│   │   ├── UploadForm.jsx            # Resume & job upload form
-│   │   ├── ATSScoreDisplay.jsx       # Match score display
-│   │   └── TailoredResumeEditor.jsx  # Editable rewritten resume
-│   ├── pages/
-│   │   ├── App.jsx
-│   │   └── index.jsx
-│   ├── services/
-│   │   └── api.js                    # Axios client for backend API
-│   └── styles/
-│       └── main.css
+├── app/                            # Next.js App Router structure
+│   ├── layout.tsx                  # Root layout (applied to all pages)
+│   ├── globals.css                 # Global Tailwind and theme styles
+│   │
+│   ├── page.tsx                    # Home page (resume upload + rewrite UI)
+│   │
+│   ├── login/                      # Login route
+│   │   └── page.tsx
+│   │
+│   └── saved/                      # Saved resumes / rewrites
+│       └── page.tsx
 │
-├── package.json
-└── vite.config.js (or next.config.js)
+├── components/                     # Reusable UI components
+│   └── UploadForm.tsx              # Resume + job description upload form
+│
+├── lib/                            # API and utility modules
+│   └── api.ts                      # Axios-based API client for backend routes
+│
+├── public/                         # Static assets (favicon, images)
+│   └── favicon.ico
+│
+├── .gitignore                      # Git ignored files
+├── eslint.config.mjs               # ESLint configuration
+├── next.config.ts                  # Next.js configuration
+├── next-env.d.ts                   # Next.js TypeScript definitions
+├── package.json                    # Frontend dependencies and scripts
+├── package-lock.json               # Dependency lockfile
+├── postcss.config.mjs              # PostCSS + Tailwind setup
+├── tsconfig.json                   # TypeScript configuration
+└── README.md                       # Frontend documentation
 
 data/
 ├── sample_resumes/   # Sample PDFs or text resumes
