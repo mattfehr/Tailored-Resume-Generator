@@ -31,17 +31,26 @@ export default function HomePage() {
     }
   }, [result]);
 
+  // Auto-compile after user stops typing (e.g., 800ms)
+  useEffect(() => {
+    if (!latex || latex.trim() === "") return;
+
+    const timeout = setTimeout(() => {
+      handleCompile();  // compile automatically
+    }, 800); // milliseconds debounce
+
+    return () => clearTimeout(timeout);
+  }, [latex]);
+
   const handleCompile = async () => {
-    if (!latex.trim()) {
-      alert("No LaTeX content to compile.");
-      return;
-    }
+    if (compiling) return;           // prevent spam
+    if (!latex.trim()) return;       // safety check
+
+    setCompiling(true);
+    setPdfUrl(null); // optional: clear old preview
 
     try {
-      setCompiling(true);
-
       const formData = new FormData();
-      // Adjust field name if your backend expects a different key
       formData.append("latex_content", latex);
 
       const res = await api.post("/compile", formData, {
@@ -51,21 +60,18 @@ export default function HomePage() {
         },
       });
 
-      // revoke old URL if any
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
-      }
-
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
       const blob = new Blob([res.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
+
     } catch (err) {
-      console.error(err);
-      alert("PDF compilation failed. Check LaTeX syntax or backend logs.");
+      console.error("Auto-compile failed:", err);
     } finally {
       setCompiling(false);
     }
   };
+
 
   return (
     <main className="max-w-6xl mx-auto py-10 px-4 space-y-8">
@@ -146,6 +152,11 @@ export default function HomePage() {
                     Click &quot;Compile PDF&quot; to update preview
                   </span>
                 </div>
+
+                {/* Auto compiling indicator */}
+                {compiling && (
+                  <p className="text-xs text-gray-500 px-3">Auto-compiling…</p>
+                )}
 
                 {pdfUrl ? (
                   <iframe
