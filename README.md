@@ -214,4 +214,4 @@ You can add more tests in `backend/tests/` to validate each service independentl
 ## Authors
 
 - **Team ResuMatch AI** – CECS 451, Fall 2025  
-- Original concept & architecture by: *Matthew Fehr & collaborators*
+- Original concept & architecture by: *Matthew Fehr, Angelo Cervana, & Marissa Marcarelli*
