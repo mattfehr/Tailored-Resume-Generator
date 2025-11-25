@@ -9,30 +9,40 @@ def rewrite_resume_with_gemini(latex_resume, job_description, keywords):
     Keeps it one page, same format, and integrates provided keywords naturally.
     """
     prompt = f"""
-You are an expert technical resume editor who edits LaTeX resumes for software and AI roles.
+You are an expert LaTeX resume editor. You will rewrite the content of a LaTeX resume while ensuring that the final output compiles successfully on latexonline.cc.
 
-Your task:
-- Rewrite the LaTeX resume content to align closely with the provided job description.
-- Maintain the original LaTeX structure, formatting, and layout.
-- Keep the resume one page long.
-- Modify **only** the text content between \\begin{{document}} and \\end{{document}}.
-- Naturally integrate the following keywords **only when contextually relevant**:
-  {', '.join(keywords)}
-- Emphasize technical skills, tools, and measurable achievements most relevant to the job.
-- Strengthen phrasing using concise, action-driven, and professional language.
-- Where possible, quantify impact or results (e.g., “reduced load time by 30%” instead of “improved performance”).
-- Do NOT invent new experiences, companies, or technologies — only reword and emphasize existing content.
-- Do NOT add extra sections, metadata, or comments.
-- IMPORTANT: Return **only the raw LaTeX source code**.
-- Do NOT wrap it in markdown formatting.
-- Do NOT include triple backticks, language tags (like ```latex), or any other fencing.
-- Your entire response must begin with a LaTeX comment or \\documentclass and end with \\end{{document}}.
+IMPORTANT — STRICT LATEX RULES (follow EXACTLY):
+
+1. You MUST NOT modify ANYTHING in the preamble (everything before \\begin{{document}}).
+2. You MUST preserve ALL existing LaTeX commands and macros exactly as they are.
+3. You MUST NOT introduce any new LaTeX commands, new macros, or new environments.
+4. You MUST NOT use Markdown formatting (NO backticks, NO ```).
+5. Only modify the text content BETWEEN \\begin{{document}} and \\end{{document}}.
+6. Do NOT add icons, tables, custom environments, or unsupported packages.
+7. Bullet points must use ONLY the existing commands provided in the original LaTeX (e.g., \\resumeItem, \\resumeItemListStart, etc.).
+8. If the original resume uses custom commands, you must use them EXACTLY as written and NEVER invent new ones.
+9. Do NOT add \\resume, \\resumeSection, \\resumeSubheading, or any unrecognized LaTeX commands.
+10. Output MUST be fully compilable LaTeX compatible with latexonline.cc.
+
+YOUR TASK:
+- Rewrite only the *content* of the resume so it strongly aligns with the provided job description.
+- Keep the structure, layout, macros, and sections exactly the same.
+- Preserve the one-page length.
+- Naturally integrate these keywords only when relevant:
+  {", ".join(keywords)}
+- Emphasize technical accomplishments, quantified impact, and role-relevant experience.
+- Do NOT invent new jobs, responsibilities, or technologies.
+- Return **only the raw LaTeX source code**, with:
+    - the original preamble unchanged
+    - revised content inside the document body
+    - ending with \\end{{document}}
+
+BEGIN NOW.
 
 Job Description:
-\"\"\"{job_description}\"\"\"
-
+\"\"\"{job_description}\"\"\"\n
 Original LaTeX Resume:
-\"\"\"{latex_resume}\"\"\"
+\"\"\"{latex_resume}\"\"\"\n
 """
 
     model = genai.GenerativeModel(Config.GEMINI_MODEL)
