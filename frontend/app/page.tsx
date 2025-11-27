@@ -192,6 +192,24 @@ export default function HomePage() {
                     Download PDF
                   </a>
                 )}
+                
+                <button
+                  onClick={() => {
+                    const blob = new Blob([latex], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "tailored_resume.tex";
+                    a.click();
+
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                >
+                  Download LaTeX
+                </button>
+
               </div>
 
               <span className="text-xs text-gray-400">

@@ -14,21 +14,39 @@ export default function UploadForm({ onResult }: UploadFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resumeFile && !jobDescription) return;
+    setError(null);
+
+    if (!resumeFile) {
+      setError("Please upload a resume (PDF or .tex)");
+      return;
+    }
+    if (!jobDescription.trim()) {
+      setError("Please paste a job description.");
+      return;
+    }
 
     const formData = new FormData();
-    if (resumeFile) formData.append("resume", resumeFile); // backend expects 'resume'
-    formData.append("job_description", jobDescription);     // backend expects 'job_description'
+    formData.append("job_description", jobDescription);
+
+    // CASE 1: User uploads a .tex LaTeX resume
+    if (resumeFile.name.endsWith(".tex")) {
+      const text = await resumeFile.text(); // read raw LaTeX
+      formData.append("latex_resume", text); // backend expects 'latex_resume'
+    } 
+    
+    // CASE 2: User uploads a PDF/DOCX/TXT resume
+    else {
+      formData.append("resume", resumeFile); // backend expects 'resume'
+    }
 
     try {
       setLoading(true);
-      setError(null);
       const res = await api.post("/rewrite", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       onResult(res.data);
     } catch (err: any) {
-      console.error(err);
+      console.error("UPLOAD ERROR:", err);
       setError("Failed to process the input. Please try again.");
     } finally {
       setLoading(false);
@@ -45,10 +63,12 @@ export default function UploadForm({ onResult }: UploadFormProps) {
       </h2>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Resume File</label>
+        <label className="block text-sm font-medium mb-1">
+          Resume File (.pdf, .docx, .txt, .tex)
+        </label>
         <input
           type="file"
-          accept=".pdf,.docx,.txt"
+          accept=".pdf,.docx,.txt,.tex"
           onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
           className="border p-2 rounded-md w-full"
         />
@@ -67,7 +87,7 @@ export default function UploadForm({ onResult }: UploadFormProps) {
 
       <button
         type="submit"
-        disabled={loading || (!resumeFile && !jobDescription)}
+        disabled={loading}
         className="bg-blue-600 text-white rounded-md p-2 hover:bg-blue-700 disabled:opacity-50"
       >
         {loading ? "Processing..." : "Generate Tailored Resume"}

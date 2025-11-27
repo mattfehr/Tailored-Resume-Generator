@@ -11,32 +11,45 @@ router = APIRouter()
 async def rewrite_resume(
     resume: UploadFile | None = None,
     latex_content: str | None = Form(None),
+    latex_resume: str | None = Form(None),   # <-- NEW FIELD (matches frontend)
     job_description: str = Form(...)
 ):
     """
-    Handles two input cases:
+    Handles three input cases:
     1. File upload (PDF/DOCX)
-    2. Raw LaTeX upload (string)
+    2. Raw LaTeX upload via 'latex_content'
+    3. Raw LaTeX upload via 'latex_resume' (frontend .tex file)
     """
     try:
         # Determine input type
         if resume:
+            # PDF or DOCX file path
             resume_text = parsing_service.extract_text_from_resume(resume)
-            latex_resume = latex_service.wrap_in_jake_template(resume_text)
-        elif latex_content:
-            latex_resume = latex_service.clean_and_validate_latex(latex_content)
-        else:
-            raise HTTPException(status_code=400, detail="Please upload a file or provide LaTeX content.")
+            latex_resume_final = latex_service.wrap_in_jake_template(resume_text)
 
-        # Extract keywords from job description
+        elif latex_resume:  
+            # Raw LaTeX uploaded from a .tex file
+            latex_resume_final = latex_service.clean_and_validate_latex(latex_resume)
+
+        elif latex_content:
+            # Frontend may send content using "latex_content"
+            latex_resume_final = latex_service.clean_and_validate_latex(latex_content)
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Please upload a resume (PDF) or a LaTeX (.tex) file."
+            )
+
+        # Extract keywords
         keywords = keyword_service.extract_keywords(job_description)
 
-        # Rewrite using Gemini
+        # Rewrite via Gemini
         tailored_resume = rewrite_service.rewrite_resume_with_gemini(
-            latex_resume, job_description, keywords
+            latex_resume_final, job_description, keywords
         )
 
-        # Compute ATS score
+        # ATS score calculation
         ats_score = score_service.compute_ats_score(job_description, tailored_resume)
 
         return {
@@ -47,6 +60,7 @@ async def rewrite_resume(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
+
 
 
 @router.post("/compile", tags=["Resume"])
