@@ -107,3 +107,33 @@ async def compile_latex(latex_content: str = Form(...)):
         raise HTTPException(status_code=504, detail="Remote LaTeX API timed out.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error using LaTeX API: {str(e)}")
+
+@router.post("/score", tags=["Resume"])
+async def score_resume(
+    latex_content: str = Form(...),
+    job_description: str = Form(...)
+):
+    """
+    Recalculate ATS score from (edited) LaTeX and job description.
+    """
+    try:
+        # Clean LaTeX (same cleaning you do for compile)
+        cleaned_latex = latex_content.strip()
+        cleaned_latex = re.sub(r"^```[a-zA-Z]*|```$", "", cleaned_latex, flags=re.MULTILINE).strip()
+
+        # Compute score
+        ats_score = score_service.compute_ats_score(job_description, cleaned_latex)
+
+        # Extract updated keywords
+        keywords = keyword_service.extract_keywords(job_description)
+
+        return {
+            "ats_score": ats_score,
+            "keywords": keywords
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error calculating ATS score: {str(e)}"
+        )

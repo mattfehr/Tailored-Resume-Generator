@@ -1,4 +1,3 @@
-// frontend/app/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,17 +12,22 @@ interface TailorResult {
   [key: string]: any;
 }
 
+interface ScoreResponse {
+  ats_score: number;
+  keywords: string[];
+}
+
 export default function HomePage() {
   const [result, setResult] = useState<TailorResult | null>(null);
   const [latex, setLatex] = useState<string>("");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [compiling, setCompiling] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
 
-  // When a new result comes in, load its LaTeX into the editor
+  // Load LaTeX into editor when new result arrives
   useEffect(() => {
     if (result?.tailored_resume) {
       setLatex(result.tailored_resume);
-      // clear old preview because content changed
       if (pdfUrl) {
         URL.revokeObjectURL(pdfUrl);
         setPdfUrl(null);
@@ -31,29 +35,33 @@ export default function HomePage() {
     }
   }, [result]);
 
-  // Auto-compile after user stops typing (e.g., 800ms)
+  // Auto-compile PDF (debounced 800ms)
   useEffect(() => {
     if (!latex || latex.trim() === "") return;
 
     const timeout = setTimeout(() => {
-      handleCompile();  // compile automatically
-    }, 800); // milliseconds debounce
+      handleCompile();
+    }, 800);
 
     return () => clearTimeout(timeout);
   }, [latex]);
 
+  /** --------------------------------------------
+   *   PDF COMPILE (FIXED TYPE ERROR)
+   * --------------------------------------------- */
   const handleCompile = async () => {
-    if (compiling) return;           // prevent spam
-    if (!latex.trim()) return;       // safety check
+    if (compiling) return;
+    if (!latex.trim()) return;
 
     setCompiling(true);
-    setPdfUrl(null); // optional: clear old preview
+    setPdfUrl(null);
 
     try {
       const formData = new FormData();
       formData.append("latex_content", latex);
 
-      const res = await api.post("/compile", formData, {
+      // Fully typed Axios response
+      const res = await api.post<ArrayBuffer>("/compile", formData, {
         responseType: "arraybuffer",
         headers: {
           "Content-Type": "multipart/form-data",
@@ -61,10 +69,14 @@ export default function HomePage() {
       });
 
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-      const blob = new Blob([res.data], { type: "application/pdf" });
+
+      // FIX: cast ArrayBuffer into Blob
+      const blob = new Blob([res.data as ArrayBuffer], {
+        type: "application/pdf",
+      });
+
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
-
     } catch (err) {
       console.error("Auto-compile failed:", err);
     } finally {
@@ -72,6 +84,32 @@ export default function HomePage() {
     }
   };
 
+  /** --------------------------------------------
+   *   RESCORE ATS (FULLY TYPED)
+   * --------------------------------------------- */
+  const handleRecalculateATS = async () => {
+    if (!latex.trim()) return;
+
+    try {
+      setRecalculating(true);
+
+      const formData = new FormData();
+      formData.append("latex_content", latex);
+
+      // Fully typed score response
+      const res = await api.post<ScoreResponse>("/score", formData);
+
+      setResult(prev => ({
+        ...prev!,
+        ats_score: res.data.ats_score,
+        keywords: res.data.keywords || prev?.keywords,
+      }));
+    } catch (err) {
+      console.error("Error recalculating ATS score:", err);
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   return (
     <main className="max-w-6xl mx-auto py-10 px-4 space-y-8">
@@ -82,97 +120,106 @@ export default function HomePage() {
         </p>
       </header>
 
-      {/* Step 1: Upload resume + job description + generate tailored resume */}
+      {/* Step 1: Upload */}
       <section className="bg-white rounded-xl border p-6 shadow-sm">
-        <UploadForm
-          onResult={(data: TailorResult) => {
-            setResult(data);
-          }}
-        />
+        <UploadForm onResult={(data: TailorResult) => setResult(data)} />
       </section>
 
-      {/* Step 2: Show ATS info + LaTeX editor + PDF split view once a result exists */}
+      {/* Step 2 */}
       {result && (
         <section className="space-y-4">
-          {/* ATS score + keywords */}
-          <div className="bg-gray-50 rounded-xl border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold">
-                ATS Match Score:{" "}
-                <span className="font-normal">
-                  {result.ats_score !== undefined
-                    ? `${result.ats_score}%`
-                    : "N/A"}
-                </span>
-              </p>
-              {result.keywords && Array.isArray(result.keywords) && (
-                <div className="mt-2">
-                  <p className="font-semibold text-sm mb-1">Key Keywords:</p>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {result.keywords.map((kw: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-blue-800"
-                      >
-                        {kw}
-                      </span>
-                    ))}
-                  </div>
+
+          {/* ------------------------ ATS SECTION ------------------------ */}
+          <div className="bg-white rounded-xl border p-5 shadow-sm flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+
+              {/* Score + button */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">ATS Match Score:</span>
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      (result.ats_score ?? 0) >= 70
+                        ? "bg-green-100 text-green-700"
+                        : (result.ats_score ?? 0) >= 40
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {result.ats_score !== undefined ? `${result.ats_score}%` : "N/A"}
+                  </span>
                 </div>
-              )}
+
+                <button
+                  onClick={handleRecalculateATS}
+                  disabled={recalculating}
+                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {recalculating ? "Recalculating…" : "Recalculate"}
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500 max-w-sm">
+                Edit your LaTeX below — the ATS score and keywords help you optimize your resume.
+              </p>
             </div>
 
-            <p className="text-xs text-gray-500 max-w-sm">
-              You can edit the LaTeX resume below, then compile and download the
-              final PDF. Changes you make in the editor are what go into the PDF.
-            </p>
+            {/* Keywords */}
+            {result.keywords && Array.isArray(result.keywords) && (
+              <div>
+                <p className="font-semibold text-sm mb-2">Key Keywords:</p>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {result.keywords.map((kw, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full"
+                    >
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Split view: LaTeX editor (left) + PDF preview (right) */}
+          {/* ------------------------ SPLIT VIEW ------------------------ */}
           <div className="h-[650px] w-full flex flex-col border rounded-xl overflow-hidden bg-white">
             <div className="flex flex-1 flex-col md:flex-row">
-              {/* Left: LaTeX editor */}
+
+              {/* LEFT — EDITOR */}
               <div className="md:w-1/2 w-full border-b md:border-b-0 md:border-r flex flex-col">
                 <div className="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
                   <h2 className="text-sm font-semibold">LaTeX Editor</h2>
-                  <span className="text-xs text-gray-500">
-                    Edit the generated LaTeX here
-                  </span>
+                  <span className="text-xs text-gray-500">Edit the generated LaTeX</span>
                 </div>
                 <div className="flex-1 min-h-[300px]">
                   <LatexEditor value={latex} onChange={setLatex} />
                 </div>
               </div>
 
-              {/* Right: PDF preview */}
+              {/* RIGHT — PDF */}
               <div className="md:w-1/2 w-full flex flex-col">
                 <div className="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
                   <h2 className="text-sm font-semibold">PDF Preview</h2>
-                  <span className="text-xs text-gray-500">
-                    Click &quot;Compile PDF&quot; to update preview
-                  </span>
+                  <span className="text-xs text-gray-500">Auto-compiling enabled</span>
                 </div>
 
-                {/* Auto compiling indicator */}
                 {compiling && (
                   <p className="text-xs text-gray-500 px-3">Auto-compiling…</p>
                 )}
 
                 {pdfUrl ? (
-                  <iframe
-                    src={pdfUrl}
-                    className="flex-1 w-full h-full"
-                    title="Resume PDF Preview"
-                  />
+                  <iframe src={pdfUrl} className="flex-1 w-full h-full" />
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
-                    No PDF yet. Click &quot;Compile PDF&quot; below to generate a preview.
+                    No PDF yet. Click "Compile PDF" below.
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Bottom action bar */}
+            {/* ------------------------ BOTTOM ACTION BAR ------------------------ */}
             <div className="border-t px-4 py-3 flex flex-wrap gap-3 items-center justify-between">
               <div className="flex gap-3">
                 <button
@@ -192,28 +239,25 @@ export default function HomePage() {
                     Download PDF
                   </a>
                 )}
-                
+
                 <button
                   onClick={() => {
                     const blob = new Blob([latex], { type: "text/plain" });
                     const url = URL.createObjectURL(blob);
-
                     const a = document.createElement("a");
                     a.href = url;
                     a.download = "tailored_resume.tex";
                     a.click();
-
                     URL.revokeObjectURL(url);
                   }}
                   className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
                 >
                   Download LaTeX
                 </button>
-
               </div>
 
               <span className="text-xs text-gray-400">
-                Tip: Make small LaTeX edits (sections, bullet points, keywords) and recompile.
+                Tip: Make small edits and recompile for the best PDF output.
               </span>
             </div>
           </div>
