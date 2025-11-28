@@ -56,6 +56,7 @@ async def rewrite_resume(
             "tailored_resume": tailored_resume,
             "ats_score": ats_score,
             "keywords": keywords,
+            "job_description": job_description
         }
 
     except Exception as e:
