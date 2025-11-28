@@ -50,7 +50,7 @@ async def rewrite_resume(
         )
 
         # ATS score calculation
-        ats_score = score_service.compute_ats_score(job_description, tailored_resume)
+        ats_score = score_service.compute_ats_score(job_description, tailored_resume, keywords)
 
         return {
             "tailored_resume": tailored_resume,
