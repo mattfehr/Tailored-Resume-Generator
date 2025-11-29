@@ -115,6 +115,7 @@ cd backend
 # Create and activate a virtual environment
 python3 -m venv venv
 source venv/bin/activate        # On Windows (PowerShell): venv\Scripts\Activate.ps1
+source venv/Scripts/activate    # git bash
 
 # Install dependencies into the venv
 pip install -r app/requirements.txt # After installing, run: python -m spacy download en_core_web_sm

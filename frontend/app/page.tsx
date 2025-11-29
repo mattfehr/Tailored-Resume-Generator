@@ -18,6 +18,18 @@ interface ScoreResponse {
   keywords: string[];
 }
 
+// ---- ASCII NORMALIZER ----
+function normalizeToASCII(str: string) {
+  return str
+    .normalize("NFKD")
+    .replace(/[\u2018\u2019]/g, "'") // curly apostrophes
+    .replace(/[\u201C\u201D]/g, '"') // curly quotes
+    .replace(/\u2014/g, "--")        // em dash
+    .replace(/\u2013/g, "-")         // en dash
+    .replace(/\u00A0/g, " ")         // non-breaking space
+    .replace(/[^\x00-\x7F]/g, "");   // strip all non ascii
+}
+
 export default function HomePage() {
   const [result, setResult] = useState<TailorResult | null>(null);
   const [latex, setLatex] = useState<string>("");
@@ -36,12 +48,9 @@ export default function HomePage() {
     }
   }, [result]);
 
-  /** --------------------------------------------
-   *   PDF COMPILE
-   * --------------------------------------------- */
+  /** PDF COMPILE */
   const handleCompile = async () => {
-    if (compiling) return;
-    if (!latex.trim()) return;
+    if (compiling || !latex.trim()) return;
 
     setCompiling(true);
     setPdfUrl(null);
@@ -70,25 +79,44 @@ export default function HomePage() {
     }
   };
 
-  /** --------------------------------------------
-   *   RE-CALCULATE ATS SCORE
-   * --------------------------------------------- */
+  /** RE-CALCULATE ATS SCORE */
   const handleRecalculateATS = async () => {
     if (!latex.trim()) return;
+    if (!result?.job_description || !result?.keywords) return;
 
     try {
       setRecalculating(true);
 
-      const formData = new FormData();
-      formData.append("latex_content", latex);
+      // Remove markdown fences but keep LaTeX body
+      const cleanedLatex = normalizeToASCII(
+        latex
+          .replace(/^```[a-zA-Z]*\s*/m, "")
+          .replace(/```$/m, "")
+          .trim()
+      );
 
-      const res = await api.post<ScoreResponse>("/score", formData);
+      const cleanedJobDesc = normalizeToASCII(result.job_description);
+      const cleanedKeywords = result.keywords.map(normalizeToASCII);
+
+      console.log("CLEANED LATEX:", cleanedLatex.slice(0, 200));
+      console.log("CLEANED JD:", cleanedJobDesc);
+      console.log("CLEANED KEYWORDS:", cleanedKeywords);
+
+      const formData = new FormData();
+      formData.append("latex_content", cleanedLatex);
+      formData.append("job_description", cleanedJobDesc);
+      formData.append("keywords_json", JSON.stringify(cleanedKeywords));
+
+      const res = await api.post<ScoreResponse>("/score", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       setResult(prev => ({
         ...prev!,
         ats_score: res.data.ats_score,
         keywords: res.data.keywords,
       }));
+
     } catch (err) {
       console.error("Error recalculating ATS score:", err);
     } finally {
@@ -98,21 +126,17 @@ export default function HomePage() {
 
   return (
     <main className="max-w-6xl mx-auto py-10 px-4 space-y-8">
-
-      {/* Step 1: Upload */}
       <section className="bg-white rounded-xl border p-6 shadow-sm">
         <UploadForm onResult={(data: TailorResult) => setResult(data)} />
       </section>
 
-      {/* Step 2: Editor + PDF */}
       {result && (
         <section className="space-y-6">
 
-          {/* ------------------------ ATS SECTION ------------------------ */}
+          {/* ATS SECTION */}
           <div className="bg-white rounded-xl border p-5 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center">
 
-              {/* Score + button */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">ATS Match Score:</span>
@@ -146,7 +170,6 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Keywords */}
             {result.keywords && (
               <div>
                 <p className="font-semibold text-sm mb-2">Key Keywords:</p>
@@ -164,22 +187,19 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* ------------------------ SPLIT VIEW ------------------------ */}
+          {/* EDITOR + PREVIEW */}
           <div className="w-full h-[650px] flex border rounded-xl overflow-hidden bg-white">
 
-            {/* LEFT — LATEX EDITOR */}
             <div className="w-1/2 h-full border-r flex flex-col">
               <div className="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">LaTeX Editor</h2>
                 <span className="text-xs text-gray-500">Edit the LaTeX</span>
               </div>
-
               <div className="flex-1 min-h-0">
                 <LatexEditor value={latex} onChange={setLatex} />
               </div>
             </div>
 
-            {/* RIGHT — PDF PREVIEW */}
             <div className="w-1/2 h-full flex flex-col">
               <div className="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">PDF Preview</h2>
@@ -187,10 +207,7 @@ export default function HomePage() {
               </div>
 
               {pdfUrl ? (
-                <iframe
-                  src={pdfUrl}
-                  className="flex-1 w-full h-full min-h-0"
-                />
+                <iframe src={pdfUrl} className="flex-1 w-full h-full min-h-0" />
               ) : (
                 <div className="flex-1 w-full h-full flex items-center justify-center text-gray-500 text-sm">
                   No PDF yet. Click "Compile PDF" below.
@@ -199,9 +216,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ------------------------ ACTION BAR ------------------------ */}
+          {/* ACTION BAR */}
           <div className="border px-4 py-3 flex flex-wrap gap-3 items-center justify-between bg-white rounded-xl">
-
             <div className="flex gap-3">
               <button
                 onClick={handleCompile}
