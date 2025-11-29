@@ -60,7 +60,7 @@ async def get_resumes(user = Depends(get_current_user)):
 
 # -------------------- DELETE RESUME --------------------
 
-@router.delete("/resumes/{resume_id}")
+@router.post("/resumes/{resume_id}/delete")
 async def delete_resume(resume_id: str, user = Depends(get_current_user)):
     user_id = user["sub"]
 
@@ -70,9 +70,32 @@ async def delete_resume(resume_id: str, user = Depends(get_current_user)):
     )
 
     if response.status_code not in (200, 204):
-        raise HTTPException(500, "Failed to delete resume")
+        raise HTTPException(500, f"Failed to delete resume: {response.text}")
 
     return { "status": "deleted" }
+
+# -------------------- RENAME RESUME --------------------
+
+@router.post("/resumes/{resume_id}/rename")
+async def rename_resume(
+    resume_id: str,
+    new_title: str = Form(...),
+    user = Depends(get_current_user)
+):
+    user_id = user["sub"]
+
+    payload = {"title": new_title}
+
+    response = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/resumes?id=eq.{resume_id}&user_id=eq.{user_id}",
+        headers=headers,
+        data=json.dumps(payload)
+    )
+
+    if response.status_code not in (200, 204):
+        raise HTTPException(500, f"Failed to rename resume: {response.text}")
+
+    return { "status": "renamed" }
 
 # -------------------- ADD EXPERIENCE --------------------
 
@@ -106,7 +129,7 @@ async def add_experience(
 
 # -------------------- DELETE EXPERIENCE --------------------
 
-@router.delete("/experiences/{exp_id}")
+@router.post("/experiences/{exp_id}/delete")
 async def delete_experience(exp_id: str, user = Depends(get_current_user)):
     user_id = user["sub"]
 
@@ -153,7 +176,7 @@ async def add_project(
 
 # -------------------- DELETE PROJECT --------------------
 
-@router.delete("/projects/{project_id}")
+@router.post("/projects/{project_id}/delete")
 async def delete_project(project_id: str, user = Depends(get_current_user)):
     user_id = user["sub"]
 

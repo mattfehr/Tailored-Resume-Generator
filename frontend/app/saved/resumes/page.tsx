@@ -1,9 +1,9 @@
 import { supabase } from "../../../lib/supabase/server";
+import ResumeEntry from "../../../components/ResumeEntry"
 
 export default async function SavedResumesPage() {
   const client = await supabase();
 
-  // Get the logged in user
   const {
     data: { session },
   } = await client.auth.getSession();
@@ -18,7 +18,6 @@ export default async function SavedResumesPage() {
 
   const token = session.access_token;
 
-  // Call FastAPI to fetch resumes
   const response = await fetch("http://localhost:8000/api/resumes", {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -38,20 +37,11 @@ export default async function SavedResumesPage() {
 
   return (
     <div className="p-6 text-white">
-      <h1 className="text-3xl font-bold mb-4">Saved Resumes</h1>
+      <h1 className="text-3xl font-bold mb-6">Saved Resumes</h1>
 
-      <ul className="space-y-4">
+      <ul className="space-y-6">
         {resumes?.map((resume: any) => (
-          <li key={resume.id} className="bg-gray-800 p-4 rounded-md">
-            <div className="flex justify-between items-center">
-              <span>{resume.title}</span>
-
-              <div className="space-x-4">
-                <button className="text-blue-400">Rename</button>
-                <button className="text-red-400">Delete</button>
-              </div>
-            </div>
-          </li>
+          <ResumeEntry key={resume.id} resume={resume} />
         ))}
 
         {!resumes.length && (
