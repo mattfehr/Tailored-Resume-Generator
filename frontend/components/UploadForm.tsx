@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import api from "../lib/api";
+import { supabase } from "../lib/supabase/client";
 
 interface UploadFormProps {
   onResult: (data: any) => void;
@@ -41,10 +42,34 @@ export default function UploadForm({ onResult }: UploadFormProps) {
 
     try {
       setLoading(true);
-      const res = await api.post("/rewrite", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+
+      // -----------------------------------
+      // NEW: Try to get logged-in JWT token
+      // -----------------------------------
+      let token: string | null = null;
+      const client = supabase();
+      const session = (await client.auth.getSession()).data.session;
+      if (session?.access_token) {
+        token = session.access_token;
+      }
+
+      // -----------------------------------
+      // Build headers (conditionally add JWT)
+      // -----------------------------------
+      const headers: Record<string, string> = {
+        "Content-Type": "multipart/form-data",
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      // -----------------------------------
+      // Send rewrite request
+      // -----------------------------------
+      const res = await api.post("/rewrite", formData, { headers });
       onResult(res.data);
+
     } catch (err: any) {
       console.error("UPLOAD ERROR:", err);
       setError("Failed to process the input. Please try again.");
