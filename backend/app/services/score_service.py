@@ -5,7 +5,7 @@ import re
 
 
 # ---------------------------
-# HELPER FUNCTIONS
+# HELPERS
 # ---------------------------
 
 def normalize(text: str):
@@ -20,8 +20,6 @@ def fuzzy_match(a: str, b: str, threshold=0.75):
 
 def keyword_match_score(keywords, resume_text):
     resume_norm = normalize(resume_text)
-
-    # Tokenize resume for partial matching
     resume_tokens = set(resume_norm.split())
 
     hits = 0
@@ -34,14 +32,14 @@ def keyword_match_score(keywords, resume_text):
             hits += 1
             continue
 
-        # 2. Exact token match (e.g. "react" in ["reactjs", "react"])
+        # 2. Exact token match
         for token in resume_tokens:
             if kw_norm == token:
                 hits += 1
                 break
 
-        # 3. Fuzzy match (e.g. "javascript" ~ "js", "react" ~ "reactjs")
-        else:  # only run fuzzy check if exact match wasn't found
+        # 3. Fuzzy match
+        else:
             for token in resume_tokens:
                 if fuzzy_match(kw_norm, token):
                     hits += 1
@@ -50,7 +48,6 @@ def keyword_match_score(keywords, resume_text):
     if len(keywords) == 0:
         return 0.0
 
-    # Normalize to prevent tiny keyword lists from killing the score
     return hits / len(keywords)
 
 
@@ -66,10 +63,17 @@ def semantic_similarity(job_description, resume_text):
 # ---------------------------
 
 def compute_ats_score(job_description, resume_text, keywords):
+    # Keyword score (primary)
     kw_score = keyword_match_score(keywords, resume_text)
-    semantic = semantic_similarity(job_description, resume_text)
 
-    # Weighted final score
-    final = (0.6 * kw_score) + (0.4 * semantic)
+    # Semantic relevance (TF-IDF boosted to give more impact)
+    semantic = semantic_similarity(job_description, resume_text)
+    semantic_boosted = min(semantic * 1.8, 1.0)   # <-- UPDATE #1
+
+    # Weighted final score (keywords more important)
+    final = (0.75 * kw_score) + (0.25 * semantic_boosted)   # <-- UPDATE #2
+
+    # Clamp to 0–100%
+    final = max(0, min(final, 1.0))
 
     return round(final * 100, 2)
