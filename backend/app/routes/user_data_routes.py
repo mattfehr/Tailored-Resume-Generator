@@ -40,7 +40,7 @@ async def save_resume(
     if response.status_code not in (200, 201):
         raise HTTPException(500, f"Supabase insert failed: {response.text}")
 
-    return { "status": "success" }
+    return {"status": "success"}
 
 # -------------------- GET USER RESUMES --------------------
 
@@ -72,7 +72,7 @@ async def delete_resume(resume_id: str, user = Depends(get_current_user)):
     if response.status_code not in (200, 204):
         raise HTTPException(500, f"Failed to delete resume: {response.text}")
 
-    return { "status": "deleted" }
+    return {"status": "deleted"}
 
 # -------------------- RENAME RESUME --------------------
 
@@ -95,7 +95,7 @@ async def rename_resume(
     if response.status_code not in (200, 204):
         raise HTTPException(500, f"Failed to rename resume: {response.text}")
 
-    return { "status": "renamed" }
+    return {"status": "renamed"}
 
 # -------------------- ADD EXPERIENCE --------------------
 
@@ -103,6 +103,8 @@ async def rename_resume(
 async def add_experience(
     company: str = Form(None),
     role: str = Form(None),
+    start_date: str = Form(None),
+    end_date: str = Form(None),
     bullets_json: str = Form(...),
     user = Depends(get_current_user)
 ):
@@ -113,6 +115,8 @@ async def add_experience(
         "user_id": user_id,
         "company": company,
         "role": role,
+        "start_date": start_date,
+        "end_date": end_date,
         "bullets": bullets
     }
 
@@ -125,7 +129,7 @@ async def add_experience(
     if response.status_code not in (200, 201):
         raise HTTPException(500, f"Insert failed: {response.text}")
 
-    return { "status": "success" }
+    return {"status": "success"}
 
 # -------------------- DELETE EXPERIENCE --------------------
 
@@ -141,7 +145,7 @@ async def delete_experience(exp_id: str, user = Depends(get_current_user)):
     if response.status_code not in (200, 204):
         raise HTTPException(500, "Failed to delete experience")
 
-    return { "status": "deleted" }
+    return {"status": "deleted"}
 
 # -------------------- ADD PROJECT --------------------
 
@@ -149,6 +153,8 @@ async def delete_experience(exp_id: str, user = Depends(get_current_user)):
 async def add_project(
     name: str = Form(None),
     tech_stack_json: str = Form(...),
+    start_date: str = Form(None),
+    end_date: str = Form(None),
     bullets_json: str = Form(...),
     user = Depends(get_current_user)
 ):
@@ -160,6 +166,8 @@ async def add_project(
         "user_id": user_id,
         "name": name,
         "tech_stack": tech_stack,
+        "start_date": start_date,
+        "end_date": end_date,
         "bullets": bullets
     }
 
@@ -172,7 +180,7 @@ async def add_project(
     if response.status_code not in (200, 201):
         raise HTTPException(500, f"Insert failed: {response.text}")
 
-    return { "status": "success" }
+    return {"status": "success"}
 
 # -------------------- DELETE PROJECT --------------------
 
@@ -188,4 +196,36 @@ async def delete_project(project_id: str, user = Depends(get_current_user)):
     if response.status_code not in (200, 204):
         raise HTTPException(500, "Failed to delete project")
 
-    return { "status": "deleted" }
+    return {"status": "deleted"}
+
+# -------------------- GET USER EXPERIENCES --------------------
+
+@router.get("/experiences")
+async def get_experiences(user = Depends(get_current_user)):
+    user_id = user["sub"]
+
+    response = requests.get(
+        f"{SUPABASE_URL}/rest/v1/experiences?user_id=eq.{user_id}",
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        raise HTTPException(500, f"Failed to fetch experiences: {response.text}")
+
+    return response.json()
+
+# -------------------- GET USER PROJECTS --------------------
+
+@router.get("/projects")
+async def get_projects(user = Depends(get_current_user)):
+    user_id = user["sub"]
+
+    response = requests.get(
+        f"{SUPABASE_URL}/rest/v1/projects?user_id=eq.{user_id}",
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        raise HTTPException(500, f"Failed to fetch projects: {response.text}")
+
+    return response.json()

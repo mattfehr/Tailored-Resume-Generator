@@ -1,5 +1,5 @@
 import { supabase } from "../../../lib/supabase/server";
-import ResumeEntry from "../../../components/ResumeEntry"
+import ResumeEntry from "../../../components/ResumeEntry";
 
 export default async function SavedResumesPage() {
   const client = await supabase();
