@@ -46,7 +46,7 @@ export default function HomePage() {
         setPdfUrl(null);
       }
     }
-  }, [result]);
+  }, [result?.tailored_resume]);
 
   /** PDF COMPILE */
   const handleCompile = async () => {
@@ -98,12 +98,12 @@ export default function HomePage() {
       const cleanedJobDesc = normalizeToASCII(result.job_description);
       const cleanedKeywords = result.keywords.map(normalizeToASCII);
 
-      console.log("CLEANED LATEX:", cleanedLatex.slice(0, 200));
+      console.log("CLEANED LATEX:", cleanedLatex);
       console.log("CLEANED JD:", cleanedJobDesc);
       console.log("CLEANED KEYWORDS:", cleanedKeywords);
 
       const formData = new FormData();
-      formData.append("latex_content", cleanedLatex);
+      formData.append("latex_body", cleanedLatex);
       formData.append("job_description", cleanedJobDesc);
       formData.append("keywords_json", JSON.stringify(cleanedKeywords));
 

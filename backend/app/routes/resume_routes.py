@@ -90,18 +90,18 @@ async def compile_latex(latex_content: str = Form(...)):
 
 @router.post("/score", tags=["Resume"])
 async def score_resume(
-    latex_content: str = Form(...),
+    latex_body: str = Form(...),
     job_description: str = Form(...),
     keywords_json: str = Form(...)
 ):
     try:
         print("---- SCORE ENDPOINT RECEIVED ----")
-        print("latex_content (first 200 chars):", latex_content[:200])
+        print("latex_content", latex_body)
         print("job_description (first 200 chars):", job_description[:200])
         print("keywords_json:", keywords_json)
         print("----------------------------------")
 
-        cleaned_latex = latex_content.strip()
+        cleaned_latex = latex_body.strip()
         cleaned_latex = re.sub(r"^```[a-zA-Z]*|```$", "", cleaned_latex, flags=re.MULTILINE).strip()
 
         keywords = json.loads(keywords_json)
