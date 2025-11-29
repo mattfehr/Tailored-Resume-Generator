@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import UploadForm from "../components/UploadForm";
 import LatexEditor from "../components/LatexEditor";
 import api from "../lib/api";
+import { supabase } from "../lib/supabase/client";  // ← ADDED
 
 interface TailorResult {
   tailored_resume: string;
@@ -36,6 +37,26 @@ export default function HomePage() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [compiling, setCompiling] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+
+  // ---- ADDED: Track auth session ----
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    const client = supabase();
+
+    client.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+    });
+
+    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+  // -----------------------------------
 
   // Load LaTeX into editor when new result arrives
   useEffect(() => {
@@ -123,6 +144,48 @@ export default function HomePage() {
       setRecalculating(false);
     }
   };
+
+  // ---- ADDED: Save Resume handler ----
+  const handleSaveResume = async () => {
+    if (!latex.trim()) {
+      alert("Generate or edit a resume first!");
+      return;
+    }
+
+    const title = prompt("Enter a title for this resume:", "My Tailored Resume");
+    if (!title) return;
+
+    const client = supabase();
+    const session = (await client.auth.getSession()).data.session;
+
+    if (!session) {
+      alert("You must be logged in to save resumes.");
+      return;
+    }
+
+    const token = session.access_token;
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("latex", latex);
+
+    const res = await fetch("http://localhost:8000/api/save-resume", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert("Failed to save resume: " + err.detail);
+      return;
+    }
+
+    alert("Resume saved!");
+  };
+  // -----------------------------------
 
   return (
     <main className="max-w-6xl mx-auto py-10 px-4 space-y-8">
@@ -251,6 +314,18 @@ export default function HomePage() {
               >
                 Download LaTeX
               </button>
+
+              {/* ---- ADDED SAVE BUTTON ---- */}
+              {session && (
+                <button
+                  onClick={handleSaveResume}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save Resume
+                </button>
+              )}
+              {/* -------------------------------- */}
+
             </div>
 
             <span className="text-xs text-gray-400">
