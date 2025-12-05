@@ -2,11 +2,16 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from difflib import SequenceMatcher
 import re
+from nltk.stem.snowball import SnowballStemmer
 
+stemmer = SnowballStemmer("english")
 
 # ---------------------------
 # HELPERS
 # ---------------------------
+
+def stem(word):
+    return stemmer.stem(word)
 
 def normalize(text: str):
     """Lowercase + remove punctuation for safer matching."""
@@ -41,7 +46,7 @@ def keyword_match_score(keywords, resume_text):
         # 3. Fuzzy match
         else:
             for token in resume_tokens:
-                if fuzzy_match(kw_norm, token):
+                if fuzzy_match(stem(kw_norm), stem(token)):
                     hits += 1
                     break
 
