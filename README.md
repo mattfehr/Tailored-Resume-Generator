@@ -1,5 +1,23 @@
 # ResuMatch AI
 
+## Table of Contents
+
+1. [Overview](#overview)  
+2. [Tech Stack](#tech-stack)  
+3. [Repository Structure](#repository-structure)  
+4. [Backend Setup](#backend-setup)  
+5. [Setup](#setup) 
+   - [Backend Setup](#backend-setup)  
+   - [Frontend Setup](#frontend-setup) 
+6. [Running Tests](#running-tests)  
+7. [Environment Variables](#environment-variables)  
+8. [Core Workflow](#core-workflow)  
+9. [Future Expansion](#future-expansion)  
+11. [Authors](#authors)  
+
+---
+
+## Overview
 **AI-powered resume tailoring platform** that helps job seekers automatically rewrite their resumes to match a target job posting using Natural Language Processing (NLP) and Large Language Models (LLMs).  
 
 This is the **MVP prototype** for the CECS 451 term project. It implements:
@@ -105,59 +123,68 @@ README.md
 
 ---
 
-## Setup Instructions
+## Setup
 
 ### **Backend Setup**
+1. Navigate to the backend directory
 
 ```bash
 cd backend
-
-# Create and activate a virtual environment
+```
+2. Create and activate a virtual environment
+```bash
 python3 -m venv venv
-source venv/bin/activate        # On Windows (PowerShell): venv\Scripts\Activate.ps1
-source venv/Scripts/activate    # git bash
+source venv/bin/activate        
+# On Windows (PowerShell): venv\Scripts\Activate.ps1
 
-# Install dependencies into the venv
-pip install -r app/requirements.txt # After installing, run: python -m spacy download en_core_web_sm
+source venv/Scripts/activate    # git bash
+```
+3. Install dependencies into the venv
+```bash
+pip install -r requirements.txt 
+```
+4. After installing, run:
+```bash
+python -m spacy download en_core_web_sm
 ```
 
-Create a `.env` file in `backend/`:
+5. Create a `.env` file in `backend/`:
 ```
 GEMINI_API_KEY=your_api_key_here
 ENV=development
 ```
 
-Run the FastAPI backend:
+6. Run the FastAPI backend:
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Your backend will run at:
-```
-http://127.0.0.1:8000
-```
+   - Your backend will run at:
+      ```bash
+      http://127.0.0.1:8000
+      ```
 
-Swagger API docs:
-```
-http://127.0.0.1:8000/docs
-```
+      Swagger API docs:
+      ```bash
+      http://127.0.0.1:8000/docs
+      ```
 
 ---
 
 ### **Frontend Setup**
-
+1. Run these commands:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Frontend will typically run on:
-```
-http://localhost:5173
-```
+- Frontend will typically run on:
+   ```bash
+   http://localhost:5173
+   ```
 
-CORS is already enabled for this origin in the backend configuration.
+- CORS is already enabled for this origin in the backend configuration.
 
 ---
 
@@ -181,34 +208,13 @@ You can add more tests in `backend/tests/` to validate each service independentl
 
 ---
 
-## MVP Core Flow
+## Core Workflow
 
 1. **User uploads** a resume (PDF/DOCX) and a job description.  
 2. **Backend extracts** text and keywords using TF-IDF + NER.  
 3. **Gemini API** rewrites the resume to emphasize matching skills.  
 4. **ATS score** is computed using cosine similarity.  
 5. **Frontend displays** tailored resume and score, with download/export options.  
-
----
-
-## Future Expansion
-
-- User accounts (store verified experiences, projects, and skills)  
-- Vector database integration for contextual resume generation  
-- Multi-section resume formatting (Education, Projects, Skills)  
-- Bias & clarity checker  
-- Export templates (LaTeX, HTML, or custom PDF styles)
-
----
-
-## Contributing
-
-1. Create a new branch for your feature:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-2. Commit changes with clear messages.
-3. Push and open a pull request.
 
 ---
 

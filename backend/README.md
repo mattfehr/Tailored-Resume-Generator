@@ -1,9 +1,6 @@
-# To do
-- need to implement supa
-- get better keywords
-- improve ATS
-- api for resume management
-- potentially analytics in the future
+# Information to inclde in account
+
+## Experience
 
 {
   "company": "TechNova Systems",
@@ -18,6 +15,7 @@
   ]
 }
 
+## Projects
 
 {
   "name": "Scalable Anime Recommendation System",
@@ -32,6 +30,7 @@
   ]
 }
 
+## Job Description
 
 We are looking for a Software Engineer (Backend/ML emphasis) to build high-performance recommendation and personalization systems.
 
