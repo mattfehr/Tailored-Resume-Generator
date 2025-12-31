@@ -7,6 +7,8 @@ from io import BytesIO
 import requests
 import re
 import json
+import google.generativeai as genai
+import os
 
 router = APIRouter()
 
@@ -238,3 +240,14 @@ async def score_resume(
             status_code=500,
             detail=f"Error calculating ATS score: {str(e)}"
         )
+    
+@router.get("/debug/models")
+def list_models():
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    out = []
+    for m in genai.list_models():
+        out.append({
+            "name": m.name,
+            "supported_generation_methods": getattr(m, "supported_generation_methods", None)
+        })
+    return out

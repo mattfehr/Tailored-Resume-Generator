@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase/client";
 
 interface UploadFormProps {
   onResult: (data: any) => void;
-  selectedTemplateId?: string; // ✅ NEW
+  selectedTemplateId?: string;
 }
 
 export default function UploadForm({ onResult, selectedTemplateId }: UploadFormProps) {
@@ -32,16 +32,14 @@ export default function UploadForm({ onResult, selectedTemplateId }: UploadFormP
 
     const isTex = resumeFile.name.toLowerCase().endsWith(".tex");
 
-    // CASE 1: User uploads a .tex LaTeX resume (already contains layout/template)
     if (isTex) {
       const text = await resumeFile.text();
-      formData.append("latex_resume", text); // backend expects 'latex_resume'
-    }
-    // CASE 2: User uploads a PDF/DOCX/TXT resume (we can apply selected template)
-    else {
-      formData.append("resume", resumeFile); // backend expects 'resume'
+      formData.append("latex_resume", text);
+      // We intentionally do NOT send template_id for .tex uploads
+      // because the .tex already defines the template/layout.
+    } else {
+      formData.append("resume", resumeFile);
 
-      // ✅ Only apply template_id when we are generating LaTeX from extracted text
       if (selectedTemplateId) {
         formData.append("template_id", selectedTemplateId);
       }
@@ -50,25 +48,37 @@ export default function UploadForm({ onResult, selectedTemplateId }: UploadFormP
     try {
       setLoading(true);
 
-      // Try to get logged-in JWT token
-      let token: string | null = null;
+      // Grab auth token if logged in
       const client = supabase();
       const session = (await client.auth.getSession()).data.session;
-      if (session?.access_token) token = session.access_token;
+      const token = session?.access_token ?? null;
 
-      // Build headers (conditionally add JWT)
-      const headers: Record<string, string> = {
-        "Content-Type": "multipart/form-data",
-      };
-
+      const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      // Send rewrite request
       const res = await api.post("/rewrite", formData, { headers });
       onResult(res.data);
     } catch (err: any) {
       console.error("UPLOAD ERROR:", err);
-      setError("Failed to process the input. Please try again.");
+
+      const detail = err?.response?.data?.detail;
+
+      let msg = "Failed to process the input. Please try again.";
+
+      // FastAPI validation error shape: { detail: [ {loc,msg,type,...}, ... ] }
+      if (Array.isArray(detail)) {
+        msg = detail
+          .map((d: any) => `${(d.loc || []).join(".")}: ${d.msg}`)
+          .join(" | ");
+      } else if (typeof detail === "string") {
+        msg = detail;
+      } else if (typeof err?.response?.data === "string") {
+        msg = err.response.data;
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
+      setError(msg);
     } finally {
       setLoading(false);
     }
