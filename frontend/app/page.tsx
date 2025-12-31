@@ -120,9 +120,9 @@ export default function HomePage() {
       const formData = new FormData();
       formData.append("latex_content", latex);
 
+      // ✅ DO NOT set Content-Type manually; axios will set boundary correctly
       const res = await api.post<ArrayBuffer>("/compile", formData, {
         responseType: "arraybuffer",
-        headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
@@ -163,9 +163,8 @@ export default function HomePage() {
       formData.append("job_description", cleanedJobDesc);
       formData.append("keywords_json", JSON.stringify(cleanedKeywords));
 
-      const res = await api.post<ScoreResponse>("/score", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // ✅ DO NOT set Content-Type manually
+      const res = await api.post<ScoreResponse>("/score", formData);
 
       setResult((prev) => ({
         ...prev!,
@@ -255,7 +254,6 @@ export default function HomePage() {
           </a>
         </div>
 
-        {/* UPDATED: pass selectedTemplateId to UploadForm */}
         <UploadForm
           selectedTemplateId={selectedTemplateId}
           onResult={(data: TailorResult) => setResult(data)}
