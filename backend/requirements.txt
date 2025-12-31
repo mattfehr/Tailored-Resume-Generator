@@ -11,5 +11,6 @@ scikit-learn
 google-generativeai
 pytest
 nltk
+python-jose[cryptography]
 
 # After installing, run: python -m spacy download en_core_web_sm
