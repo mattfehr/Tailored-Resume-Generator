@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes.health import router as health_router
 from app.routes.resume_routes import router as resume_router
 from app.routes.user_data_routes import router as user_data_router
+import os
+
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 
 app = FastAPI(
     title="ResuMatch AI Backend",
@@ -13,7 +16,8 @@ app = FastAPI(
 # --- CORS: allow Next dev server to connect ---
 origins = [
     "http://localhost:3000",  # Next.js dev server
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    FRONTEND_ORIGIN,  # your Vercel domain later
 ]
 app.add_middleware(
     CORSMiddleware,
