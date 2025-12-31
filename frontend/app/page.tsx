@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import UploadForm from "../components/UploadForm";
 import LatexEditor from "../components/LatexEditor";
 import api from "../lib/api";
-import { supabase } from "../lib/supabase/client";  // ← ADDED
+import { supabase } from "../lib/supabase/client";
 
 interface TailorResult {
   tailored_resume: string;
@@ -19,16 +19,18 @@ interface ScoreResponse {
   keywords: string[];
 }
 
+type TemplateOption = { id: string; title: string };
+
 // ---- ASCII NORMALIZER ----
 function normalizeToASCII(str: string) {
   return str
     .normalize("NFKD")
-    .replace(/[\u2018\u2019]/g, "'") // curly apostrophes
-    .replace(/[\u201C\u201D]/g, '"') // curly quotes
-    .replace(/\u2014/g, "--")        // em dash
-    .replace(/\u2013/g, "-")         // en dash
-    .replace(/\u00A0/g, " ")         // non-breaking space
-    .replace(/[^\x00-\x7F]/g, "");   // strip all non ascii
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2014/g, "--")
+    .replace(/\u2013/g, "-")
+    .replace(/\u00A0/g, " ")
+    .replace(/[^\x00-\x7F]/g, "");
 }
 
 export default function HomePage() {
@@ -38,8 +40,12 @@ export default function HomePage() {
   const [compiling, setCompiling] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
 
-  // ---- ADDED: Track auth session ----
+  // ---- Track auth session ----
   const [session, setSession] = useState<any>(null);
+
+  // ---- Templates ----
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(""); // "" = default Jake
 
   useEffect(() => {
     const client = supabase();
@@ -56,7 +62,41 @@ export default function HomePage() {
       listener.subscription.unsubscribe();
     };
   }, []);
-  // -----------------------------------
+
+  // Fetch templates when logged in
+  useEffect(() => {
+    const loadTemplates = async () => {
+      if (!session?.access_token) {
+        setTemplates([]);
+        setSelectedTemplateId("");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:8000/api/templates", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+
+        if (!res.ok) {
+          setTemplates([]);
+          return;
+        }
+
+        const data = await res.json();
+        setTemplates(
+          (data || []).map((t: any) => ({
+            id: t.id,
+            title: t.title,
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to load templates:", err);
+        setTemplates([]);
+      }
+    };
+
+    loadTemplates();
+  }, [session]);
 
   // Load LaTeX into editor when new result arrives
   useEffect(() => {
@@ -67,7 +107,7 @@ export default function HomePage() {
         setPdfUrl(null);
       }
     }
-  }, [result?.tailored_resume]);
+  }, [result?.tailored_resume]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** PDF COMPILE */
   const handleCompile = async () => {
@@ -108,7 +148,6 @@ export default function HomePage() {
     try {
       setRecalculating(true);
 
-      // Remove markdown fences but keep LaTeX body
       const cleanedLatex = normalizeToASCII(
         latex
           .replace(/^```[a-zA-Z]*\s*/m, "")
@@ -119,10 +158,6 @@ export default function HomePage() {
       const cleanedJobDesc = normalizeToASCII(result.job_description);
       const cleanedKeywords = result.keywords.map(normalizeToASCII);
 
-      console.log("CLEANED LATEX:", cleanedLatex);
-      console.log("CLEANED JD:", cleanedJobDesc);
-      console.log("CLEANED KEYWORDS:", cleanedKeywords);
-
       const formData = new FormData();
       formData.append("latex_body", cleanedLatex);
       formData.append("job_description", cleanedJobDesc);
@@ -132,12 +167,11 @@ export default function HomePage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setResult(prev => ({
+      setResult((prev) => ({
         ...prev!,
         ats_score: res.data.ats_score,
         keywords: res.data.keywords,
       }));
-
     } catch (err) {
       console.error("Error recalculating ATS score:", err);
     } finally {
@@ -145,7 +179,7 @@ export default function HomePage() {
     }
   };
 
-  // ---- ADDED: Save Resume handler ----
+  // ---- Save Resume handler ----
   const handleSaveResume = async () => {
     if (!latex.trim()) {
       alert("Generate or edit a resume first!");
@@ -185,21 +219,54 @@ export default function HomePage() {
 
     alert("Resume saved!");
   };
-  // -----------------------------------
 
   return (
     <main className="max-w-6xl mx-auto py-10 px-4 space-y-8">
       <section className="bg-white rounded-xl border p-6 shadow-sm">
-        <UploadForm onResult={(data: TailorResult) => setResult(data)} />
+        {/* TEMPLATE SELECT BAR */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-semibold">Template:</label>
+
+            <select
+              className="border rounded-md px-3 py-2 text-sm bg-white"
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              disabled={!session}
+              title={!session ? "Login to use custom templates" : ""}
+            >
+              <option value="">Jake (Default)</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+
+            {!session && (
+              <span className="text-xs text-gray-500">
+                (login to use custom templates)
+              </span>
+            )}
+          </div>
+
+          <a href="/templates" className="text-sm text-blue-600 hover:underline">
+            Manage templates →
+          </a>
+        </div>
+
+        {/* UPDATED: pass selectedTemplateId to UploadForm */}
+        <UploadForm
+          selectedTemplateId={selectedTemplateId}
+          onResult={(data: TailorResult) => setResult(data)}
+        />
       </section>
 
       {result && (
         <section className="space-y-6">
-
           {/* ATS SECTION */}
           <div className="bg-white rounded-xl border p-5 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center">
-
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">ATS Match Score:</span>
@@ -213,9 +280,7 @@ export default function HomePage() {
                         : "bg-red-100 text-red-700"
                     }`}
                   >
-                    {result.ats_score !== undefined
-                      ? `${result.ats_score}%`
-                      : "N/A"}
+                    {result.ats_score !== undefined ? `${result.ats_score}%` : "N/A"}
                   </span>
                 </div>
 
@@ -252,7 +317,6 @@ export default function HomePage() {
 
           {/* EDITOR + PREVIEW */}
           <div className="w-full h-[650px] flex border rounded-xl overflow-hidden bg-white">
-
             <div className="w-1/2 h-full border-r flex flex-col">
               <div className="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">LaTeX Editor</h2>
@@ -315,7 +379,6 @@ export default function HomePage() {
                 Download LaTeX
               </button>
 
-              {/* ---- ADDED SAVE BUTTON ---- */}
               {session && (
                 <button
                   onClick={handleSaveResume}
@@ -324,15 +387,12 @@ export default function HomePage() {
                   Save Resume
                 </button>
               )}
-              {/* -------------------------------- */}
-
             </div>
 
             <span className="text-xs text-gray-400">
               Tip: Make small edits and recompile for the best PDF output.
             </span>
           </div>
-
         </section>
       )}
     </main>

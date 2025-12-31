@@ -174,3 +174,34 @@ def clean_and_validate_latex(latex_code: str) -> str:
         latex_code = wrap_in_jake_template(latex_code)
     latex_code = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", latex_code)
     return latex_code.strip()
+
+def wrap_in_template(text: str, template_latex: str) -> str:
+    """
+    Fill a user-provided LaTeX template using standard placeholders:
+    {NAME}, {CONTACT_LINE}, {EDU}, {EXP}, {PROJ}, {SKILLS}
+    """
+    meta = extract_contact_info(text)
+    sections = extract_sections(text)
+
+    edu = to_resume_items(sections.get("Education", ""))
+    exp = to_resume_items(sections.get("Experience", ""))
+    proj = to_resume_items(sections.get("Projects", ""))
+    skills = to_resume_items(sections.get("Technical Skills", sections.get("Skills", "")))
+
+    contact_bits = [meta["phone"], meta["email"]]
+    if meta["linkedin"]: contact_bits.append(meta["linkedin"])
+    if meta["github"]:   contact_bits.append(meta["github"])
+    contact_line = " | ".join(filter(None, contact_bits)) or "Contact Info Here"
+
+    out = (template_latex or "").strip()
+
+    # Replace placeholders if present; otherwise no-op
+    out = out.replace("{NAME}", meta["name"] or "Candidate Name")
+    out = out.replace("{CONTACT_LINE}", latex_escape(contact_line))
+    out = out.replace("{EDU}", edu or "")
+    out = out.replace("{EXP}", exp or "")
+    out = out.replace("{PROJ}", proj or "")
+    out = out.replace("{SKILLS}", skills or "")
+
+    return out.strip()
+

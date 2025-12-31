@@ -27,7 +27,8 @@ async def rewrite_resume(
     resume: UploadFile | None = None,
     latex_content: str | None = Form(None),
     latex_resume: str | None = Form(None),
-    job_description: str = Form(...)
+    job_description: str = Form(...),
+    template_id: str | None = Form(None),
 ):
     try:
         print("Parsing input...")
@@ -37,7 +38,34 @@ async def rewrite_resume(
         # -------------------------
         if resume:
             resume_text = parsing_service.extract_text_from_resume(resume)
-            latex_resume_final = latex_service.wrap_in_jake_template(resume_text)
+
+            # Default template (Jake)
+            template_latex = None
+
+            # If user provided template_id, require auth and fetch it
+            if template_id:
+                auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+                if not auth_header or not auth_header.lower().startswith("bearer "):
+                    raise HTTPException(status_code=401, detail="Login required to use custom templates.")
+
+                token = auth_header.split(" ", 1)[1].strip()
+                payload = verify_jwt(token)
+                user_id = payload.get("sub")
+                if not user_id:
+                    raise HTTPException(status_code=401, detail="Invalid auth token.")
+
+                tpl_res = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/resume_templates?id=eq.{template_id}&user_id=eq.{user_id}&select=latex",
+                    headers=supabase_headers
+                )
+                if tpl_res.status_code != 200 or not tpl_res.json():
+                    raise HTTPException(status_code=404, detail="Template not found.")
+                template_latex = tpl_res.json()[0]["latex"]
+
+            if template_latex:
+                latex_resume_final = latex_service.wrap_in_template(resume_text, template_latex)
+            else:
+                latex_resume_final = latex_service.wrap_in_jake_template(resume_text)
 
         elif latex_resume:
             latex_resume_final = latex_service.clean_and_validate_latex(latex_resume)

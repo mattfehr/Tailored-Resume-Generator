@@ -229,3 +229,86 @@ async def get_projects(user = Depends(get_current_user)):
         raise HTTPException(500, f"Failed to fetch projects: {response.text}")
 
     return response.json()
+
+# -------------------- SAVE TEMPLATE --------------------
+
+@router.post("/templates/save")
+async def save_template(
+    title: str = Form(...),
+    latex: str = Form(...),
+    user = Depends(get_current_user)
+):
+    user_id = user["sub"]
+
+    payload = {
+        "user_id": user_id,
+        "title": title,
+        "latex": latex
+    }
+
+    response = requests.post(
+        f"{SUPABASE_URL}/rest/v1/resume_templates",
+        headers=headers,
+        data=json.dumps(payload)
+    )
+
+    if response.status_code not in (200, 201):
+        raise HTTPException(500, f"Supabase insert failed: {response.text}")
+
+    return {"status": "success"}
+
+# -------------------- GET TEMPLATES --------------------
+
+@router.get("/templates")
+async def get_templates(user = Depends(get_current_user)):
+    user_id = user["sub"]
+
+    response = requests.get(
+        f"{SUPABASE_URL}/rest/v1/resume_templates?user_id=eq.{user_id}&order=updated_at.desc",
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        raise HTTPException(500, f"Supabase query failed: {response.text}")
+
+    return response.json()
+
+# -------------------- DELETE TEMPLATE --------------------
+
+@router.post("/templates/{template_id}/delete")
+async def delete_template(template_id: str, user = Depends(get_current_user)):
+    user_id = user["sub"]
+
+    response = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/resume_templates?id=eq.{template_id}&user_id=eq.{user_id}",
+        headers=headers
+    )
+
+    if response.status_code not in (200, 204):
+        raise HTTPException(500, f"Failed to delete template: {response.text}")
+
+    return {"status": "deleted"}
+
+# -------------------- RENAME TEMPLATE --------------------
+
+@router.post("/templates/{template_id}/rename")
+async def rename_template(
+    template_id: str,
+    new_title: str = Form(...),
+    user = Depends(get_current_user)
+):
+    user_id = user["sub"]
+
+    payload = {"title": new_title}
+
+    response = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/resume_templates?id=eq.{template_id}&user_id=eq.{user_id}",
+        headers=headers,
+        data=json.dumps(payload)
+    )
+
+    if response.status_code not in (200, 204):
+        raise HTTPException(500, f"Failed to rename template: {response.text}")
+
+    return {"status": "renamed"}
+

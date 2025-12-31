@@ -5,9 +5,10 @@ import { supabase } from "../lib/supabase/client";
 
 interface UploadFormProps {
   onResult: (data: any) => void;
+  selectedTemplateId?: string; // ✅ NEW
 }
 
-export default function UploadForm({ onResult }: UploadFormProps) {
+export default function UploadForm({ onResult, selectedTemplateId }: UploadFormProps) {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -29,47 +30,42 @@ export default function UploadForm({ onResult }: UploadFormProps) {
     const formData = new FormData();
     formData.append("job_description", jobDescription);
 
-    // CASE 1: User uploads a .tex LaTeX resume
-    if (resumeFile.name.endsWith(".tex")) {
-      const text = await resumeFile.text(); // read raw LaTeX
+    const isTex = resumeFile.name.toLowerCase().endsWith(".tex");
+
+    // CASE 1: User uploads a .tex LaTeX resume (already contains layout/template)
+    if (isTex) {
+      const text = await resumeFile.text();
       formData.append("latex_resume", text); // backend expects 'latex_resume'
-    } 
-    
-    // CASE 2: User uploads a PDF/DOCX/TXT resume
+    }
+    // CASE 2: User uploads a PDF/DOCX/TXT resume (we can apply selected template)
     else {
       formData.append("resume", resumeFile); // backend expects 'resume'
+
+      // ✅ Only apply template_id when we are generating LaTeX from extracted text
+      if (selectedTemplateId) {
+        formData.append("template_id", selectedTemplateId);
+      }
     }
 
     try {
       setLoading(true);
 
-      // -----------------------------------
-      // NEW: Try to get logged-in JWT token
-      // -----------------------------------
+      // Try to get logged-in JWT token
       let token: string | null = null;
       const client = supabase();
       const session = (await client.auth.getSession()).data.session;
-      if (session?.access_token) {
-        token = session.access_token;
-      }
+      if (session?.access_token) token = session.access_token;
 
-      // -----------------------------------
       // Build headers (conditionally add JWT)
-      // -----------------------------------
       const headers: Record<string, string> = {
         "Content-Type": "multipart/form-data",
       };
 
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      // -----------------------------------
       // Send rewrite request
-      // -----------------------------------
       const res = await api.post("/rewrite", formData, { headers });
       onResult(res.data);
-
     } catch (err: any) {
       console.error("UPLOAD ERROR:", err);
       setError("Failed to process the input. Please try again.");
