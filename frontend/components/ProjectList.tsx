@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase/client";
 import { useState } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ProjectList({ projects }: { projects: any[] }) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -24,7 +26,7 @@ export default function ProjectList({ projects }: { projects: any[] }) {
     form.append("start_date", startDate);
     form.append("end_date", endDate);
 
-    await fetch("http://localhost:8000/api/projects/add", {
+    await fetch(`${API_URL}/projects/add`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: form,
@@ -40,7 +42,7 @@ export default function ProjectList({ projects }: { projects: any[] }) {
     const session = (await client.auth.getSession()).data.session;
     const token = session?.access_token;
 
-    await fetch(`http://localhost:8000/api/projects/${id}/delete`, {
+    await fetch(`${API_URL}/projects/${id}/delete`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });

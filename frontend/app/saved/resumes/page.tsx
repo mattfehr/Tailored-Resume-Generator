@@ -1,6 +1,8 @@
 import { supabase } from "../../../lib/supabase/server";
 import ResumeEntry from "../../../components/ResumeEntry";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default async function SavedResumesPage() {
   const client = await supabase();
 
@@ -18,7 +20,7 @@ export default async function SavedResumesPage() {
 
   const token = session.access_token;
 
-  const response = await fetch("http://localhost:8000/api/resumes", {
+  const response = await fetch(`${API_URL}/resumes`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

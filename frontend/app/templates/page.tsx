@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase/client";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 type TemplateRow = { id: string; title: string; latex: string };
 
 const JAKE_SEED = `% Paste a full LaTeX template here.
@@ -29,7 +31,7 @@ export default function TemplatesPage() {
   }, []);
 
   const loadTemplates = async (token: string) => {
-    const res = await fetch("http://localhost:8000/api/templates", {
+    const res = await fetch(`${API_URL}/templates`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return;
@@ -52,7 +54,7 @@ export default function TemplatesPage() {
     form.append("title", draftTitle.trim());
     form.append("latex", draftLatex);
 
-    const res = await fetch("http://localhost:8000/api/templates/save", {
+    const res = await fetch(`${API_URL}/templates/save`, {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
       body: form,
@@ -72,7 +74,7 @@ export default function TemplatesPage() {
     const form = new FormData();
     form.append("new_title", newTitle);
 
-    const res = await fetch(`http://localhost:8000/api/templates/${id}/rename`, {
+    const res = await fetch(`${API_URL}/templates/${id}/rename`, {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
       body: form,
@@ -85,7 +87,7 @@ export default function TemplatesPage() {
     if (!session) return;
     if (!confirm("Delete this template?")) return;
 
-    const res = await fetch(`http://localhost:8000/api/templates/${id}/delete`, {
+    const res = await fetch(`${API_URL}/templates/${id}/delete`, {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
     });

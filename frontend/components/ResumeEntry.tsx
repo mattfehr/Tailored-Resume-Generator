@@ -3,6 +3,8 @@
 import { supabase } from "../lib/supabase/client";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ResumeEntry({ resume }: { resume: any }) {
   const router = useRouter();
 
@@ -14,7 +16,7 @@ export default function ResumeEntry({ resume }: { resume: any }) {
     const session = (await client.auth.getSession()).data.session;
     const token = session?.access_token;
 
-    await fetch(`http://localhost:8000/api/resumes/${resume.id}/delete`, {
+    await fetch(`${API_URL}/resumes/${resume.id}/delete`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -34,7 +36,7 @@ export default function ResumeEntry({ resume }: { resume: any }) {
     const formData = new FormData();
     formData.append("new_title", newTitle);
 
-    await fetch(`http://localhost:8000/api/resumes/${resume.id}/rename`, {
+    await fetch(`${API_URL}/resumes/${resume.id}/rename`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,

@@ -2,6 +2,8 @@ import { supabase } from "../../../lib/supabase/server";
 import ExperienceList from "../../../components/ExperienceList";
 import ProjectList from "../../../components/ProjectList";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default async function ExperiencesPage() {
   const client = await supabase();
   const { data: { session } } = await client.auth.getSession();
@@ -17,11 +19,11 @@ export default async function ExperiencesPage() {
   const token = session.access_token;
 
   const [experienceRes, projectRes] = await Promise.all([
-    fetch("http://localhost:8000/api/experiences", {
+    fetch(`${API_URL}/experiences`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     }),
-    fetch("http://localhost:8000/api/projects", {
+    fetch(`${API_URL}/projects`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     }),

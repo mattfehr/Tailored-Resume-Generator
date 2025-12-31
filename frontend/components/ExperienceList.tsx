@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase/client";
 import { useState } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ExperienceList({ experiences }: { experiences: any[] }) {
   const router = useRouter();
   const [company, setCompany] = useState("");
@@ -24,7 +26,7 @@ export default function ExperienceList({ experiences }: { experiences: any[] }) 
     form.append("end_date", endDate);
     form.append("bullets_json", JSON.stringify(bullets.split("\n")));
 
-    await fetch("http://localhost:8000/api/experiences/add", {
+    await fetch(`${API_URL}/experiences/add`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: form,
@@ -40,7 +42,7 @@ export default function ExperienceList({ experiences }: { experiences: any[] }) 
     const session = (await client.auth.getSession()).data.session;
     const token = session?.access_token;
 
-    await fetch(`http://localhost:8000/api/experiences/${id}/delete`, {
+    await fetch(`${API_URL}/experiences/${id}/delete`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });

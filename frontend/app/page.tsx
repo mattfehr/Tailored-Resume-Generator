@@ -6,6 +6,8 @@ import LatexEditor from "../components/LatexEditor";
 import api from "../lib/api";
 import { supabase } from "../lib/supabase/client";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 interface TailorResult {
   tailored_resume: string;
   ats_score?: number;
@@ -73,7 +75,7 @@ export default function HomePage() {
       }
 
       try {
-        const res = await fetch("http://localhost:8000/api/templates", {
+        const res = await fetch(`${API_URL}/templates`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
 
@@ -202,7 +204,7 @@ export default function HomePage() {
     formData.append("title", title);
     formData.append("latex", latex);
 
-    const res = await fetch("http://localhost:8000/api/save-resume", {
+    const res = await fetch(`${API_URL}/save-resume`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
