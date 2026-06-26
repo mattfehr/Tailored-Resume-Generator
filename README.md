@@ -1,6 +1,7 @@
 # ResuMatch AI
 
-Online Deployment - https://resumatchai-pi.vercel.app/
+Online Deployment (currently down / non functional) - https://resumatchai-pi.vercel.app/
+Demo video - https://vimeo.com/1143513097?share=copy&fl=sv&fe=ci
 
 ## Table of Contents
 
